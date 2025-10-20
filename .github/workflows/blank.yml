@@ -1,36 +1,29 @@
-# This is a basic workflow to help you get started with Actions
-
-name: CI
-
-# Controls when the workflow will run
+name: keepalive-ping
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  schedule:
+    - cron: '*/5 * * * *'   # ogni 5 minuti
+  workflow_dispatch:        # possibilità di far partire manualmente
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  ping:
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
-
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
-
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      - name: Controlla status remoto
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          STATUS_URL="https://raw.githubusercontent.com/fsdkjtgf3w4/manutenzioneducale/main/status.json"
+          STATUS_VALUE=$(curl -s "$STATUS_URL" | jq -r '.status')
+          echo "Status remoto: $STATUS_VALUE"
+
+          if [ "$STATUS_VALUE" = "false" ]; then
+            echo "Status è false → invio ping"
+            URL="https://botducato.onrender.com/"
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$URL")
+            echo "Ping $URL -> HTTP $HTTP_CODE"
+            if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
+              echo "OK"
+            else
+              echo "Non OK"
+            fi
+          else
+            echo "Status è true → ping disattivato"
+          fi
