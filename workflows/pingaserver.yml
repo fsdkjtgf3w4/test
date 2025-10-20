@@ -1,0 +1,29 @@
+name: keepalive-ping
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # ogni 5 minuti
+  workflow_dispatch:        # possibilità di far partire manualmente
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Controlla status remoto
+        run: |
+          STATUS_URL="https://raw.githubusercontent.com/fsdkjtgf3w4/manutenzioneducale/main/status.json"
+          STATUS_VALUE=$(curl -s "$STATUS_URL" | jq -r '.status')
+          echo "Status remoto: $STATUS_VALUE"
+
+          if [ "$STATUS_VALUE" = "false" ]; then
+            echo "Status è false → invio ping"
+            URL="https://botducato.onrender.com/"
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$URL")
+            echo "Ping $URL -> HTTP $HTTP_CODE"
+            if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
+              echo "OK"
+            else
+              echo "Non OK"
+            fi
+          else
+            echo "Status è true → ping disattivato"
+          fi
