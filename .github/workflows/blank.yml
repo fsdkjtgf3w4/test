@@ -25,5 +25,5 @@ jobs:
               echo "Non OK"
             fi
           else
-            echo "Status è true → ping disattivato"
+            echo "Status è true → ping disattivato."
           fi
